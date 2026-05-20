@@ -65,8 +65,8 @@
 								}
 
 								@fragment
-								fn fragmentMain() -> @location(0) vec4f {
-									return vec4f(1, 0, 0, 1);
+								fn fragmentMain(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4f {
+									return vec4f(fragCoord.x / 512, fragCoord.y / 512, 0, 1);
 								}
 								`
 								});
