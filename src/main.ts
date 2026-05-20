@@ -120,7 +120,10 @@ pass.end();
 
 device.queue.submit([encoder.finish()]);
 
-setInterval(() => {
+function render() {
+  canvas.width = canvas.clientWidth;
+  canvas.height = canvas.clientHeight;
+
   const uniforms = new Float32Array([
     canvas.width,
     canvas.height,
@@ -173,4 +176,6 @@ setInterval(() => {
   pass.end();
 
   device.queue.submit([encoder.finish()]);
-}, 1);
+}
+
+setInterval(render, 1);
