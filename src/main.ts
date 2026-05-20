@@ -46,7 +46,12 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
 const cellShaderModule = device.createShaderModule({
   label: "Cell shader",
   code: `
-    @group(0) @binding(0) var<uniform> size: vec2f;
+    struct MyUniforms {
+      size: vec2f,
+      time: f32,
+    };
+
+    @group(0) @binding(0) var<uniform> uniforms: MyUniforms;
 
 		@vertex
     fn vert_main(@location(0) position: vec2f) -> @builtin(position) vec4f {
@@ -55,10 +60,11 @@ const cellShaderModule = device.createShaderModule({
 
     @fragment
     fn frag_main(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4f {
-      let width = size.x;
-      let height = size.y;
+      let width = uniforms.size.x;
+      let height = uniforms.size.y;
+      let t = uniforms.time;
 
-      return vec4f(frag_coord.x / width, frag_coord.y / height, 1, 1);
+      return vec4f(frag_coord.x / width, frag_coord.y / height, (sin(t / 500) + 1) / 2, 1);
     }
 	`,
 });
@@ -83,14 +89,19 @@ const cellPipeline = device.createRenderPipeline({
   },
 });
 
-// Create a uniform buffer with the current screen dimensions
-const canvasSize = new Float32Array([canvas.width, canvas.height]);
+// Create a uniform buffer with the current screen dimensions and time
+const uniforms = new Float32Array([
+  canvas.width,
+  canvas.height,
+  performance.now(),
+  0,
+]);
 const uniformBuffer = device.createBuffer({
-  label: "Canvas Size",
-  size: canvasSize.byteLength,
+  label: "My Uniforms",
+  size: uniforms.byteLength,
   usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
 });
-device.queue.writeBuffer(uniformBuffer, 0, canvasSize);
+device.queue.writeBuffer(uniformBuffer, 0, uniforms);
 
 // Create a bind group to pass the uniform into the pipeline
 const bindGroup = device.createBindGroup({
@@ -127,3 +138,58 @@ pass.draw(vertices.length / 2);
 pass.end();
 
 device.queue.submit([encoder.finish()]);
+
+setInterval(() => {
+  const uniforms = new Float32Array([
+    canvas.width,
+    canvas.height,
+    performance.now(),
+    0,
+  ]);
+  const uniformBuffer = device.createBuffer({
+    label: "My Uniforms",
+    size: uniforms.byteLength,
+    usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+  });
+  device.queue.writeBuffer(uniformBuffer, 0, uniforms);
+
+  // Create a bind group to pass the uniform into the pipeline
+  const bindGroup = device.createBindGroup({
+    label: "Cell renderer bind group",
+    layout: cellPipeline.getBindGroupLayout(0),
+    entries: [
+      {
+        binding: 0,
+        resource: { buffer: uniformBuffer },
+      },
+    ],
+  });
+
+  //
+  //
+  //
+  //
+
+  // Clear the canvas with a render pass
+  const encoder = device.createCommandEncoder();
+
+  const pass = encoder.beginRenderPass({
+    colorAttachments: [
+      {
+        view: context.getCurrentTexture().createView(),
+        loadOp: "clear",
+        clearValue: { r: 0, g: 0, b: 0.4, a: 1.0 },
+        storeOp: "store",
+      },
+    ],
+  });
+
+  pass.setPipeline(cellPipeline);
+  pass.setBindGroup(0, bindGroup);
+  pass.setVertexBuffer(0, vertexBuffer);
+  pass.draw(vertices.length / 2);
+
+  pass.end();
+
+  device.queue.submit([encoder.finish()]);
+}, 1);
