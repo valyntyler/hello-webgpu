@@ -46,16 +46,19 @@ const vertexBufferLayout: GPUVertexBufferLayout = {
 const cellShaderModule = device.createShaderModule({
   label: "Cell shader",
   code: `
-    @group(0) @binding(0) var<uniform> canvasSize: vec2f;
+    @group(0) @binding(0) var<uniform> size: vec2f;
 
 		@vertex
-    fn vertexMain(@location(0) position: vec2f) -> @builtin(position) vec4f {
+    fn vert_main(@location(0) position: vec2f) -> @builtin(position) vec4f {
       return vec4f(position, 0, 1);
     }
 
     @fragment
-    fn fragmentMain(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4f {
-      return vec4f(fragCoord.x / canvasSize.x, fragCoord.y / canvasSize.y, 0, 1);
+    fn frag_main(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4f {
+      let width = size.x;
+      let height = size.y;
+
+      return vec4f(frag_coord.x / width, frag_coord.y / height, 1, 1);
     }
 	`,
 });
@@ -66,12 +69,12 @@ const cellPipeline = device.createRenderPipeline({
   layout: "auto",
   vertex: {
     module: cellShaderModule,
-    entryPoint: "vertexMain",
+    entryPoint: "vert_main",
     buffers: [vertexBufferLayout],
   },
   fragment: {
     module: cellShaderModule,
-    entryPoint: "fragmentMain",
+    entryPoint: "frag_main",
     targets: [
       {
         format: canvasFormat,
