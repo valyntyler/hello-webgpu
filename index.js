@@ -46,6 +46,8 @@ const vertexBufferLayout = {
 const cellShaderModule = device.createShaderModule({
   label: "Cell shader",
   code: `
+    @group(0) @binding(0) var<uniform> canvasSize: vec2f;
+
 		@vertex
     fn vertexMain(@location(0) position: vec2f) -> @builtin(position) vec4f {
       return vec4f(position, 0, 1);
@@ -53,7 +55,7 @@ const cellShaderModule = device.createShaderModule({
 
     @fragment
     fn fragmentMain(@builtin(position) fragCoord: vec4<f32>) -> @location(0) vec4f {
-      return vec4f(fragCoord.x / 512, fragCoord.y / 512, 1, 1);
+      return vec4f(fragCoord.x / canvasSize.x, fragCoord.y / canvasSize.y, 0, 1);
     }
 	`,
 });
@@ -78,6 +80,27 @@ const cellPipeline = device.createRenderPipeline({
   },
 });
 
+// Create a uniform buffer with the current screen dimensions
+const canvasSize = new Float32Array([canvas.width, canvas.height]);
+const uniformBuffer = device.createBuffer({
+  label: "Canvas Size",
+  size: canvasSize.byteLength,
+  usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+});
+device.queue.writeBuffer(uniformBuffer, 0, canvasSize);
+
+// Create a bind group to pass the uniform into the pipeline
+const bindGroup = device.createBindGroup({
+  label: "Cell renderer bind group",
+  layout: cellPipeline.getBindGroupLayout(0),
+  entries: [
+    {
+      binding: 0,
+      resource: { buffer: uniformBuffer },
+    },
+  ],
+});
+
 // Clear the canvas with a render pass
 const encoder = device.createCommandEncoder();
 
@@ -94,6 +117,7 @@ const pass = encoder.beginRenderPass({
 
 // Draw the square.
 pass.setPipeline(cellPipeline);
+pass.setBindGroup(0, bindGroup);
 pass.setVertexBuffer(0, vertexBuffer);
 pass.draw(vertices.length / 2);
 
