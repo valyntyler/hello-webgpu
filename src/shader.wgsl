@@ -20,15 +20,17 @@ fn frag_main(@builtin(position) frag_coord: vec4<f32>) -> @location(0) vec4f {
   let r = frag_coord.x / width;
   let g = frag_coord.y / height;
 
-  return vec4f(0, 0, mandelbrot((r * aspect_ratio - 1) * 2, (g - 0.5) * 2), 1);
+  return vec4f(0, 0, mandelbrot((r * aspect_ratio - 1) * 3, (g - 0.5) * 3), 1);
 }
 
 fn mandelbrot(x: f32, y: f32) -> f32 {
+  var iters: f32 = 50;
+
   var c = vec2f(x, y);
   var z = vec2f(0, 0);
-  for (var i: i32 = 0; i < 100; i++) {
+  for (var i: f32 = 0; i < iters; i += 1.0) {
     if (length(z) > 2) {
-      return 1;
+      return (iters - i + 1) / (iters + 1);
     }
     let z_squared = vec2f(z.x * z.x - z.y * z.y, 2 * z.x * z.y);
     z = z_squared + c;
