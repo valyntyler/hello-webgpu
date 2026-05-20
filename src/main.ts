@@ -1,4 +1,4 @@
-const canvas = document.querySelector("canvas");
+const canvas = document.querySelector("canvas")!;
 
 // WebGPU device initialization
 if (!navigator.gpu) {
@@ -13,7 +13,7 @@ if (!adapter) {
 const device = await adapter.requestDevice();
 
 // Canvas configuration
-const context = canvas.getContext("webgpu");
+const context = canvas.getContext("webgpu")!;
 const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
 context.configure({
   device: device,
@@ -31,7 +31,7 @@ const vertexBuffer = device.createBuffer({
 });
 device.queue.writeBuffer(vertexBuffer, 0, vertices);
 
-const vertexBufferLayout = {
+const vertexBufferLayout: GPUVertexBufferLayout = {
   arrayStride: 8,
   attributes: [
     {
